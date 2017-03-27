@@ -6,9 +6,9 @@ using System.ServiceModel;
 using System.ServiceModel.Web;
 using System.Text;
 using Newtonsoft.Json;
-using System.Runtime.Serialization;
 using System.Net;
 using System.IO;
+using System.Web;
 
 namespace RequiredServices
 {
@@ -16,38 +16,56 @@ namespace RequiredServices
     // NOTE: In order to launch WCF Test Client for testing this service, please select Service1.svc or Service1.svc.cs at the Solution Explorer and start debugging.
     public class Service1 : IService1
     {
-        public string getReview(string vendorName)
+        public Result getReview(string vendorName)
         {
-
-
-
-            return vendorName + " has a rating of x.x stars on Yelp.";
+            Result r = new Result();
+            r.response = vendorName + " has a rating of x.x stars on Yelp.";
+            return r;
         }
 
-<<<<<<< HEAD
-        public async Task<Yelp.Api.Models.SearchResponse> findNearestVenue(string location, string venueName)
-=======
-        public string findNearestVenue(string location, string venueName)
->>>>>>> parent of 1ccf77a... Updated Venue Svc
+        public Result findNearestVenue(string location, string venueName)
         {
-            string url = @"https://api.foursquare.com/v2/venues/search?near=" + location + "&query=" + venueName;
+            string url = @"https://api.foursquare.com/v2/venues/search?near=" + location + "&query=" + venueName +
+                "&client_id=Y5R4TGDCYYCLUEIXQL25EDTATVYQW5RA34NFZTY4NVNL2Z1K" +
+                "&client_secret=HOWS12EJTFIAKE3WBEJC5ZA5DF3F31DRF1RYC1GINDMU53PY&v=" + DateTime.Now.ToString("yyyyMMdd");
 
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
             WebResponse response = request.GetResponse();
             Stream responseStream = response.GetResponseStream();
-
-<<<<<<< HEAD
-            var client = new Yelp.Api.Client("WWNzN00w_IDH-KeaU0Evkg", "KUu2mlUbI3q7GWHmC9Uwl7arfNTBMtj7DN9B2tU81wlTRaXRnACtFuCrkVBNwTVy");
-            Yelp.Api.Models.SearchResponse results = await client.SearchBusinessesAllAsync(request);
-            Console.WriteLine(results);
-            //return "The closest " + venueName + " in " + location + " is ";
-            return results;
-=======
             StreamReader reader = new StreamReader(responseStream);
             String json = reader.ReadToEnd();
 
-            return "The closest venue to " + location + " is ";
->>>>>>> parent of 1ccf77a... Updated Venue Svc
+            venueArray array = JsonConvert.DeserializeObject<venueArray>(json);
+
+            venueInfo shortest = new venueInfo();
+            shortest.name = array.venues[0].name;
+            shortest.distance = array.venues[0].distance;
+
+            //for (int i = 1; i < array.venues.Count; i++)
+            //{
+            //    if (array.venues[i].distance < shortest.distance)
+            //    {
+            //        shortest.name = array.venues[i].name;
+            //        shortest.distance = array.venues[i].distance;
+            //    }
+            //}
+
+            Result r = new Result();
+            r.response = "The closest venue to " + shortest.name + " is " + shortest.distance + " meters.";
+            return r;
+        }
+
+        [Serializable]
+        public class venueArray
+        {
+            public List<venueInfo> venues { get; set; }
+        }
+
+        [Serializable]
+        public class venueInfo
+        {
+            public string name { get; set; }
+            public int distance { get; set; }
         }
     }
 }
