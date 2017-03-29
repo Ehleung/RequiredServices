@@ -18,7 +18,7 @@ namespace RequiredServices
         Result getReview(string vendor);
 
         [OperationContract]
-        [WebInvoke(Method = "GET", UriTemplate = "/findNearestVenue/{location}/{venuename}", ResponseFormat = WebMessageFormat.Json)]
+        [WebInvoke(Method = "GET", UriTemplate = "/findNearbyVenues/{location}/{venuename}", ResponseFormat = WebMessageFormat.Json)]
         string findNearbyVenues(string location, string venueName);
     }
 
