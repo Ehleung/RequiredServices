@@ -4,11 +4,14 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.ServiceModel;
 using System.ServiceModel.Web;
+using System.Web.Script.Serialization;
 using System.Text;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Net;
 using System.IO;
 using System.Web;
+
 
 namespace RequiredServices
 {
@@ -23,7 +26,7 @@ namespace RequiredServices
             return r;
         }
 
-        public Result findNearestVenue(string location, string venueName)
+        public string findNearbyVenues(string location, string venueName)
         {
             string url = @"https://api.foursquare.com/v2/venues/search?near=" + location + "&query=" + venueName +
                 "&client_id=Y5R4TGDCYYCLUEIXQL25EDTATVYQW5RA34NFZTY4NVNL2Z1K" +
@@ -35,37 +38,40 @@ namespace RequiredServices
             StreamReader reader = new StreamReader(responseStream);
             String json = reader.ReadToEnd();
 
-            venueArray array = JsonConvert.DeserializeObject<venueArray>(json);
+            JavaScriptSerializer ser = new JavaScriptSerializer();
 
-            venueInfo shortest = new venueInfo();
-            shortest.name = array.venues[0].name;
-            shortest.distance = array.venues[0].distance;
+            venueList array = ser.Deserialize<venueList>(json);
+            return ser.Serialize(array);
 
-            //for (int i = 1; i < array.venues.Count; i++)
-            //{
-            //    if (array.venues[i].distance < shortest.distance)
-            //    {
-            //        shortest.name = array.venues[i].name;
-            //        shortest.distance = array.venues[i].distance;
-            //    }
-            //}
-
-            Result r = new Result();
-            r.response = "The closest venue to " + shortest.name + " is " + shortest.distance + " meters.";
-            return r;
+            //Result r = new Result();
+            //r.response = "The closest venue to " + venueName + " is "  + " meters.";
+            //return r.response;
         }
 
         [Serializable]
-        public class venueArray
+        public class locations
         {
-            public List<venueInfo> venues { get; set; }
+
         }
 
         [Serializable]
-        public class venueInfo
+        public class venue
         {
             public string name { get; set; }
-            public int distance { get; set; }
+            public string location { get; set; }
+            //public int distance { get; set; }
+        }
+
+        [Serializable]
+        public class venueList
+        {
+            public List<venue> list { get; set; }
+        }
+
+        [Serializable]
+        public class responses
+        {
+            public venueList venues { get; set; }
         }
     }
 }

@@ -19,7 +19,7 @@ namespace RequiredServices
 
         [OperationContract]
         [WebInvoke(Method = "GET", UriTemplate = "/findNearestVenue/{location}/{venuename}", ResponseFormat = WebMessageFormat.Json)]
-        Result findNearestVenue(string location, string venueName);
+        string findNearbyVenues(string location, string venueName);
     }
 
     [DataContract]
