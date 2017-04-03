@@ -19,11 +19,49 @@ namespace RequiredServices
     // NOTE: In order to launch WCF Test Client for testing this service, please select Service1.svc or Service1.svc.cs at the Solution Explorer and start debugging.
     public class Service1 : IService1
     {
-        public Result getReview(string vendorName)
+        public string getReviews(string vendorName)
         {
-            Result r = new Result();
-            r.response = vendorName + " has a rating of x.x stars on Yelp.";
-            return r;
+            string url = @"https://api.foursquare.com/v2/venues/search?near=arizona" + "&query=" + vendorName +
+                "&client_id=Y5R4TGDCYYCLUEIXQL25EDTATVYQW5RA34NFZTY4NVNL2Z1K" +
+                "&client_secret=HOWS12EJTFIAKE3WBEJC5ZA5DF3F31DRF1RYC1GINDMU53PY&v=" + DateTime.Now.ToString("yyyyMMdd");
+            /*https://api.foursquare.com//v2//venues//search?near=arizona&query=campground&client_id=Y5R4TGDCYYCLUEIXQL25EDTATVYQW5RA34NFZTY4NVNL2Z1K&client_secret=HOWS12EJTFIAKE3WBEJC5ZA5DF3F31DRF1RYC1GINDMU53PY&v=20170329   */
+
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+            WebResponse response = request.GetResponse();
+            Stream responseStream = response.GetResponseStream();
+            StreamReader reader = new StreamReader(responseStream);
+            String json = reader.ReadToEnd();
+            
+            venues venueList = ParseJsonObject<venues>(json);
+
+            setReplies(venueList);
+
+            int count = 0;
+            bool found = false;
+            string vendorId = "blank";
+            while (count < retainer.replies.Count && !found)
+            {
+                if (retainer.replies[count].name == vendorName)
+                {
+                    found = true;
+                    vendorId = retainer.replies[count].id;
+                }
+                count++;
+            }
+            return vendorId;
+            
+            url = @"https://api.foursquare.com/v2/venues/" + vendorId + "/tips";
+
+            request = (HttpWebRequest)WebRequest.Create(url);
+            response = request.GetResponse();
+            responseStream = response.GetResponseStream();
+            reader = new StreamReader(responseStream);
+            json = reader.ReadToEnd();
+
+            return json;
+            //Result r = new Result();
+            //r.response = vendorName + " has a rating of x.x stars on Foursquare.";
+            //return r;
         }
 
         public static T ParseJsonObject<T>(string json) where T : class, new()
@@ -32,58 +70,41 @@ namespace RequiredServices
             return JsonConvert.DeserializeObject<T>(jobject.ToString());
         }
 
+        public void setReplies(venues venueList)
+        {
+            retainer.replies = new List<reply>();
+            foreach (Venue venue in venueList.Response.Venues)
+            {
+                reply newReply = new reply();
+                newReply.name = venue.Name;
+                newReply.location = venue.Location.Address;
+                newReply.id = venue.Id;
+                retainer.replies.Add(newReply);
+            }
+        }
+
         public string findNearbyVenues(string location, string venueName)
         {
             string url = @"https://api.foursquare.com/v2/venues/search?near=" + location + "&query=" + venueName +
                 "&client_id=Y5R4TGDCYYCLUEIXQL25EDTATVYQW5RA34NFZTY4NVNL2Z1K" +
                 "&client_secret=HOWS12EJTFIAKE3WBEJC5ZA5DF3F31DRF1RYC1GINDMU53PY&v=" + DateTime.Now.ToString("yyyyMMdd");
+            /*https://api.foursquare.com//v2//venues//search?near=85048&query=campground&client_id=Y5R4TGDCYYCLUEIXQL25EDTATVYQW5RA34NFZTY4NVNL2Z1K&client_secret=HOWS12EJTFIAKE3WBEJC5ZA5DF3F31DRF1RYC1GINDMU53PY&v=20170329   */
 
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
             WebResponse response = request.GetResponse();
             Stream responseStream = response.GetResponseStream();
             StreamReader reader = new StreamReader(responseStream);
             String json = reader.ReadToEnd();
-            //JavaScriptSerializer ser = new JavaScriptSerializer();
-
-            List<reply> replies = new List<reply>();
-
             venues venueList = ParseJsonObject<venues>(json);
-            foreach(Venue venue in venueList.Response.Venues)
-            {
-                reply newReply = new reply();
-                newReply.name = venue.Name;
-                newReply.location = venue.Location.Address;
-            }
 
-            //responses array = ser.Deserialize<responses>(json);
-            //dynamic dynObj = JsonConvert.DeserializeObject(json);
-            //foreach(var data in dynObj.venues)
-            //{
-            //    venue newVenue = new venue();
-            //    newVenue.name = data.name;
-            //    newVenue.location = data.location.address;
-            //    venueList.Add(newVenue);
-            //}
+            setReplies(venueList);
 
             string returnStmt = "Nearby " + venueName + " around " + location + ":";
-            foreach(reply replyIter in replies)
+            foreach(reply replyIter in retainer.replies)
                 returnStmt += "\n" + replyIter.name + ", " + replyIter.location;
             return returnStmt;
-
-            //return ser.Serialize(array);
-
-            //Result r = new Result();
-            //r.response = "The closest venue to " + venueName + " is "  + " meters.";
-            //return r.response;
         }
-
-        [Serializable]
-        public class reply
-        {
-            public string name { get; set; }
-            public string location { get; set; }
-        }
-
+        
         [Serializable]
         public class Meta
         {

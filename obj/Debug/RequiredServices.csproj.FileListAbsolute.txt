@@ -1,0 +1,8 @@
+D:\Github\RequiredServices\obj\Debug\RequiredServices.csprojResolveAssemblyReference.cache
+D:\Github\RequiredServices\bin\RequiredServices.dll.config
+D:\Github\RequiredServices\bin\RequiredServices.dll
+D:\Github\RequiredServices\bin\RequiredServices.pdb
+D:\Github\RequiredServices\bin\Newtonsoft.Json.dll
+D:\Github\RequiredServices\bin\Newtonsoft.Json.xml
+D:\Github\RequiredServices\obj\Debug\RequiredServices.dll
+D:\Github\RequiredServices\obj\Debug\RequiredServices.pdb

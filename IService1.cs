@@ -14,17 +14,29 @@ namespace RequiredServices
     public interface IService1
     {
         [OperationContract]
-        [WebInvoke(Method = "GET", UriTemplate = "getReview/{vendor}", ResponseFormat = WebMessageFormat.Json)]
-        Result getReview(string vendor);
+        [WebInvoke(Method = "GET", UriTemplate = "getReviews/{vendor}", ResponseFormat = WebMessageFormat.Json)]
+        string getReviews(string vendor);
 
         [OperationContract]
         [WebInvoke(Method = "GET", UriTemplate = "/findNearbyVenues/{location}/{venuename}", ResponseFormat = WebMessageFormat.Json)]
         string findNearbyVenues(string location, string venueName);
+
+        [OperationContract]
+        [WebInvoke(Method = "POST")]
+        void setReplies(Service1.venues venueList);
     }
 
     [DataContract]
-    public class Result
+    public static class retainer
     {
-        public string response { get; set; }
+        public static List<reply> replies;
+    }
+
+    [DataContract]
+    public class reply
+    {
+        public string name { get; set; }
+        public string location { get; set; }
+        public string id { get; set; }
     }
 }
