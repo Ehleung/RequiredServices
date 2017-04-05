@@ -19,51 +19,6 @@ namespace RequiredServices
     // NOTE: In order to launch WCF Test Client for testing this service, please select Service1.svc or Service1.svc.cs at the Solution Explorer and start debugging.
     public class Service1 : IService1
     {
-        public string getReviews(string vendorName)
-        {
-            string url = @"https://api.foursquare.com/v2/venues/search?near=arizona" + "&query=" + vendorName +
-                "&client_id=Y5R4TGDCYYCLUEIXQL25EDTATVYQW5RA34NFZTY4NVNL2Z1K" +
-                "&client_secret=HOWS12EJTFIAKE3WBEJC5ZA5DF3F31DRF1RYC1GINDMU53PY&v=" + DateTime.Now.ToString("yyyyMMdd");
-            /*https://api.foursquare.com//v2//venues//search?near=arizona&query=campground&client_id=Y5R4TGDCYYCLUEIXQL25EDTATVYQW5RA34NFZTY4NVNL2Z1K&client_secret=HOWS12EJTFIAKE3WBEJC5ZA5DF3F31DRF1RYC1GINDMU53PY&v=20170329   */
-
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-            WebResponse response = request.GetResponse();
-            Stream responseStream = response.GetResponseStream();
-            StreamReader reader = new StreamReader(responseStream);
-            String json = reader.ReadToEnd();
-            
-            venues venueList = ParseJsonObject<venues>(json);
-
-            setReplies(venueList);
-
-            int count = 0;
-            bool found = false;
-            string vendorId = "blank";
-            while (count < retainer.replies.Count && !found)
-            {
-                if (retainer.replies[count].name == vendorName)
-                {
-                    found = true;
-                    vendorId = retainer.replies[count].id;
-                }
-                count++;
-            }
-            return vendorId;
-            
-            url = @"https://api.foursquare.com/v2/venues/" + vendorId + "/tips";
-
-            request = (HttpWebRequest)WebRequest.Create(url);
-            response = request.GetResponse();
-            responseStream = response.GetResponseStream();
-            reader = new StreamReader(responseStream);
-            json = reader.ReadToEnd();
-
-            return json;
-            //Result r = new Result();
-            //r.response = vendorName + " has a rating of x.x stars on Foursquare.";
-            //return r;
-        }
-
         public static T ParseJsonObject<T>(string json) where T : class, new()
         {
             JObject jobject = JObject.Parse(json);
@@ -80,6 +35,77 @@ namespace RequiredServices
                 newReply.location = venue.Location.Address;
                 newReply.id = venue.Id;
                 retainer.replies.Add(newReply);
+            }
+        }
+
+        public void setReviews(reviews reviewList)
+        {
+            retainer.reviews = new List<review>();
+            foreach(Item tip in reviewList.Response.Tips.Items)
+            {
+                review newReview = new review();
+                newReview.tip = tip.Text;
+                retainer.reviews.Add(newReview);
+            }
+        }
+
+        public string getReviews(string vendorName)
+        {
+            if (Char.IsLower(vendorName[0]))
+                Char.ToUpper(vendorName[0]);
+
+            string url = @"https://api.foursquare.com/v2/venues/search?near=arizona" + "&query=" + vendorName +
+                "&client_id=Y5R4TGDCYYCLUEIXQL25EDTATVYQW5RA34NFZTY4NVNL2Z1K" +
+                "&client_secret=HOWS12EJTFIAKE3WBEJC5ZA5DF3F31DRF1RYC1GINDMU53PY&v=" + DateTime.Now.ToString("yyyyMMdd");
+            /*https://api.foursquare.com//v2//venues//search?near=arizona&query=&client_id=Y5R4TGDCYYCLUEIXQL25EDTATVYQW5RA34NFZTY4NVNL2Z1K&client_secret=HOWS12EJTFIAKE3WBEJC5ZA5DF3F31DRF1RYC1GINDMU53PY&v=20170329   */
+
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+            WebResponse response = request.GetResponse();
+            Stream responseStream = response.GetResponseStream();
+            StreamReader reader = new StreamReader(responseStream);
+            String json = reader.ReadToEnd();
+
+            venues venueList = ParseJsonObject<venues>(json);
+
+            setReplies(venueList);
+
+            int count = 0;
+            bool found = false;
+            string vendorId = null;
+            while (count < retainer.replies.Count && !found)
+            {
+                if (retainer.replies[count].name.Contains(vendorName))
+                {
+                    found = true;
+                    vendorId = retainer.replies[count].id;
+                }
+                count++;
+            }
+
+            if (vendorId == null)
+            {
+                return "No matching venue found. Please ensure proper punctuation (capitalization, spelling) and try again.";
+            }
+            else
+            {
+                url = @"https://api.foursquare.com/v2/venues/" + vendorId + "/tips?" +
+                    "client_id=Y5R4TGDCYYCLUEIXQL25EDTATVYQW5RA34NFZTY4NVNL2Z1K" +
+                    "&client_secret=HOWS12EJTFIAKE3WBEJC5ZA5DF3F31DRF1RYC1GINDMU53PY&v=" + DateTime.Now.ToString("yyyyMMdd");
+
+                request = (HttpWebRequest)WebRequest.Create(url);
+                response = request.GetResponse();
+                responseStream = response.GetResponseStream();
+                reader = new StreamReader(responseStream);
+                json = reader.ReadToEnd();
+                reviews reviewList = ParseJsonObject<reviews>(json);
+
+                setReviews(reviewList);
+
+                string returnStmt = "Anonymous reviews for " + retainer.replies[count--].id + ": ";
+                foreach (review rev in retainer.reviews)
+                    returnStmt += "\n" + rev.tip;
+                
+                return returnStmt;
             }
         }
 
@@ -100,11 +126,11 @@ namespace RequiredServices
             setReplies(venueList);
 
             string returnStmt = "Nearby " + venueName + " around " + location + ":";
-            foreach(reply replyIter in retainer.replies)
+            foreach (reply replyIter in retainer.replies)
                 returnStmt += "\n" + replyIter.name + ", " + replyIter.location;
             return returnStmt;
         }
-        
+
         [Serializable]
         public class Meta
         {
@@ -370,6 +396,9 @@ namespace RequiredServices
         [Serializable]
         public class Response
         {
+            // only for reviews
+            [JsonProperty("tips")]
+            public Tips Tips { get; set; }
 
             [JsonProperty("venues")]
             public Venue[] Venues { get; set; }
@@ -380,6 +409,219 @@ namespace RequiredServices
 
         [Serializable]
         public class venues
+        {
+            [JsonProperty("meta")]
+            public Meta Meta { get; set; }
+
+            [JsonProperty("response")]
+            public Response Response { get; set; }
+        }
+
+
+        public class Source
+        {
+
+            [JsonProperty("name")]
+            public string Name { get; set; }
+
+            [JsonProperty("url")]
+            public string Url { get; set; }
+        }
+
+        public class Photo
+        {
+
+            [JsonProperty("id")]
+            public string Id { get; set; }
+
+            [JsonProperty("createdAt")]
+            public int CreatedAt { get; set; }
+
+            [JsonProperty("source")]
+            public Source Source { get; set; }
+
+            [JsonProperty("prefix")]
+            public string Prefix { get; set; }
+
+            [JsonProperty("suffix")]
+            public string Suffix { get; set; }
+
+            [JsonProperty("width")]
+            public int Width { get; set; }
+
+            [JsonProperty("height")]
+            public int Height { get; set; }
+
+            [JsonProperty("visibility")]
+            public string Visibility { get; set; }
+        }
+
+        public class Photo2
+        {
+
+            [JsonProperty("prefix")]
+            public string Prefix { get; set; }
+
+            [JsonProperty("suffix")]
+            public string Suffix { get; set; }
+
+            [JsonProperty("default")]
+            public bool? Default { get; set; }
+        }
+
+        public class Item2
+        {
+
+            [JsonProperty("id")]
+            public string Id { get; set; }
+
+            [JsonProperty("firstName")]
+            public string FirstName { get; set; }
+
+            [JsonProperty("lastName")]
+            public string LastName { get; set; }
+
+            [JsonProperty("gender")]
+            public string Gender { get; set; }
+
+            [JsonProperty("photo")]
+            public Photo2 Photo { get; set; }
+        }
+
+        public class Group
+        {
+
+            [JsonProperty("type")]
+            public string Type { get; set; }
+
+            [JsonProperty("count")]
+            public int Count { get; set; }
+
+            [JsonProperty("items")]
+            public Item2[] Items { get; set; }
+        }
+
+        public class Likes
+        {
+
+            [JsonProperty("count")]
+            public int Count { get; set; }
+
+            [JsonProperty("groups")]
+            public Group[] Groups { get; set; }
+
+            [JsonProperty("summary")]
+            public string Summary { get; set; }
+        }
+
+        public class Todo
+        {
+
+            [JsonProperty("count")]
+            public int Count { get; set; }
+        }
+
+        public class Photo3
+        {
+
+            [JsonProperty("prefix")]
+            public string Prefix { get; set; }
+
+            [JsonProperty("suffix")]
+            public string Suffix { get; set; }
+
+            [JsonProperty("default")]
+            public bool? Default { get; set; }
+        }
+
+        public class User
+        {
+
+            [JsonProperty("id")]
+            public string Id { get; set; }
+
+            [JsonProperty("firstName")]
+            public string FirstName { get; set; }
+
+            [JsonProperty("gender")]
+            public string Gender { get; set; }
+
+            [JsonProperty("photo")]
+            public Photo3 Photo { get; set; }
+
+            [JsonProperty("lastName")]
+            public string LastName { get; set; }
+
+            [JsonProperty("type")]
+            public string Type { get; set; }
+        }
+
+        public class Item
+        {
+
+            [JsonProperty("id")]
+            public string Id { get; set; }
+
+            [JsonProperty("createdAt")]
+            public int CreatedAt { get; set; }
+
+            [JsonProperty("text")]
+            public string Text { get; set; }
+
+            [JsonProperty("type")]
+            public string Type { get; set; }
+
+            [JsonProperty("canonicalUrl")]
+            public string CanonicalUrl { get; set; }
+
+            [JsonProperty("photo")]
+            public Photo Photo { get; set; }
+
+            [JsonProperty("photourl")]
+            public string Photourl { get; set; }
+
+            [JsonProperty("likes")]
+            public Likes Likes { get; set; }
+
+            [JsonProperty("logView")]
+            public bool LogView { get; set; }
+
+            [JsonProperty("agreeCount")]
+            public int AgreeCount { get; set; }
+
+            [JsonProperty("disagreeCount")]
+            public int DisagreeCount { get; set; }
+
+            [JsonProperty("lastVoteText")]
+            public string LastVoteText { get; set; }
+
+            [JsonProperty("lastUpvoteTimestamp")]
+            public int LastUpvoteTimestamp { get; set; }
+
+            [JsonProperty("todo")]
+            public Todo Todo { get; set; }
+
+            [JsonProperty("user")]
+            public User User { get; set; }
+
+            [JsonProperty("authorInteractionType")]
+            public string AuthorInteractionType { get; set; }
+
+            [JsonProperty("url")]
+            public string Url { get; set; }
+        }
+
+        public class Tips
+        {
+
+            [JsonProperty("count")]
+            public int Count { get; set; }
+
+            [JsonProperty("items")]
+            public Item[] Items { get; set; }
+        }
+
+        public class reviews
         {
             [JsonProperty("meta")]
             public Meta Meta { get; set; }

@@ -24,12 +24,23 @@ namespace RequiredServices
         [OperationContract]
         [WebInvoke(Method = "POST")]
         void setReplies(Service1.venues venueList);
+
+        [OperationContract]
+        [WebInvoke(Method = "POST")]
+        void setReviews(Service1.reviews reviewList);
     }
 
     [DataContract]
     public static class retainer
     {
         public static List<reply> replies;
+        public static List<review> reviews;
+    }
+
+    [DataContract]
+    public class review
+    {
+        public string tip { get; set; }
     }
 
     [DataContract]
