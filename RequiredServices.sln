@@ -5,10 +5,7 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RequiredServices", "RequiredServices.csproj", "{8D29FC2F-1D71-4777-BDEB-1FC5AE18106D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TryIt", "..\TryIt\TryIt.csproj", "{AA56C282-CCE6-4A3B-941A-2BF0A42833BE}"
-	ProjectSection(ProjectDependencies) = postProject
-		{8D29FC2F-1D71-4777-BDEB-1FC5AE18106D} = {8D29FC2F-1D71-4777-BDEB-1FC5AE18106D}
-	EndProjectSection
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TryIt", "TryIt\TryIt.csproj", "{AA56C282-CCE6-4A3B-941A-2BF0A42833BE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
